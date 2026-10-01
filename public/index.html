@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Long Division Lab</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fdf6e3; --paper:#ffffff; --ink:#1f2937; --muted:#6b7280;
+  --line:#c7d2fe; --accent:#6d28d9; --accent2:#f59e0b; --good:#16a34a; --bad:#dc2626;
+  --cell:56px; --grid:#e5e7eb;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Fredoka,system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  background-image:radial-gradient(#fde68a 1px,transparent 1px);background-size:22px 22px}
+header{display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--accent);color:#fff;
+  box-shadow:0 4px 0 #4c1d95;flex-wrap:wrap}
+header h1{margin:0;font-size:26px;letter-spacing:.5px}
+.stats{margin-left:auto;display:flex;gap:14px;font-weight:600;font-size:18px;align-items:center}
+.pill{background:rgba(255,255,255,.18);padding:6px 12px;border-radius:999px}
+.lang{display:flex;background:rgba(255,255,255,.18);border-radius:999px;padding:3px}
+.lang button{background:transparent;color:#fff;box-shadow:none;padding:5px 12px;border-radius:999px;font-size:15px}
+.lang button.on{background:#fff;color:var(--accent)}
+main{display:grid;grid-template-columns:1fr 330px;gap:18px;padding:18px;max-width:1200px;margin:0 auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.board{background:var(--paper);border-radius:18px;box-shadow:0 8px 0 #ddd6fe,0 10px 24px rgba(0,0,0,.08);
+  padding:18px;position:relative;min-height:520px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+button{font-family:inherit;font-size:16px;font-weight:600;border:0;border-radius:12px;padding:9px 14px;
+  cursor:pointer;background:#ede9fe;color:var(--accent);box-shadow:0 3px 0 #c4b5fd;transition:transform .05s}
+button:active{transform:translateY(2px);box-shadow:none}
+button.primary{background:var(--accent);color:#fff;box-shadow:0 3px 0 #4c1d95}
+button.warn{background:#fef3c7;color:#92400e;box-shadow:0 3px 0 #fcd34d}
+button.on{outline:3px solid var(--accent2)}
+button:disabled{opacity:.4;cursor:default}
+select{font-family:inherit;font-size:16px;padding:8px 10px;border-radius:10px;border:2px solid var(--line)}
+.workspace{position:relative;background:
+  linear-gradient(var(--grid) 1px,transparent 1px) 0 0/var(--cell) var(--cell),
+  linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/var(--cell) var(--cell);
+  border:2px dashed #ddd6fe;border-radius:12px;min-height:440px;overflow:hidden;touch-action:none}
+#grid{position:absolute;inset:0;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:34px}
+.c{position:absolute;width:var(--cell);height:var(--cell);display:flex;align-items:center;justify-content:center;
+  animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.c.q{color:var(--accent)} .c.prod{color:#b45309} .c.diff{color:#0e7490} .c.bd{color:#be185d}
+.c.active{background:#fef3c7;border:3px solid var(--accent2);border-radius:8px;color:var(--ink);animation:blink 1s infinite}
+@keyframes blink{50%{border-color:transparent}}
+.c.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.hline{position:absolute;height:4px;background:var(--ink);border-radius:2px}
+.vline{position:absolute;width:4px;background:var(--ink);border-radius:2px}
+.minus{position:absolute;width:var(--cell);height:var(--cell);display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:30px;color:#b45309}
+#ink{position:absolute;inset:0;pointer-events:none}
+#ink.drawing{pointer-events:auto;cursor:crosshair}
+.side{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--paper);border-radius:18px;padding:16px;box-shadow:0 6px 0 #fde68a,0 10px 24px rgba(0,0,0,.06)}
+.coach{display:flex;gap:12px;align-items:flex-start}
+.mascot{font-size:54px;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.15));transition:transform .2s}
+.mascot.bounce{animation:bounce .6s}
+@keyframes bounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-14px) rotate(-8deg)}60%{transform:translateY(0) rotate(6deg)}}
+.bubble{background:#f5f3ff;border-radius:14px;padding:12px 14px;font-size:17px;flex:1;position:relative;min-height:60px}
+.bubble:before{content:"";position:absolute;left:-10px;top:18px;border:8px solid transparent;border-right-color:#f5f3ff}
+.prompt{font-size:20px;font-weight:700;margin:0 0 6px}
+.typed{font-family:'JetBrains Mono',monospace;font-size:28px;background:#fef3c7;border-radius:10px;padding:6px 12px;min-height:46px;
+  display:flex;align-items:center;gap:6px}
+.typed .cursor{width:3px;height:30px;background:var(--ink);animation:blink 1s infinite}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pens{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.swatch{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #ddd;cursor:pointer}
+.swatch.on{box-shadow:0 0 0 3px var(--accent)}
+.small{font-size:14px;color:var(--muted)}
+.badges{display:flex;gap:6px;flex-wrap:wrap;font-size:24px;min-height:32px}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+.toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--good);color:#fff;padding:10px 18px;
+  border-radius:999px;font-weight:700;font-size:18px;opacity:0;transition:opacity .2s;z-index:60}
+.toast.show{opacity:1}
+kbd{background:#eee;border-radius:5px;padding:1px 6px;font-family:inherit;border:1px solid #ccc}
+.final{position:absolute;right:14px;bottom:12px;font-size:22px;font-weight:700;color:var(--good);background:#dcfce7;
+  padding:8px 14px;border-radius:12px;display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧮 <span data-t="title">Long Division Lab</span></h1>
+  <div class="stats">
+    <span class="pill">⭐ <span id="score">0</span></span>
+    <span class="pill">🔥 <span id="streak">0</span></span>
+    <span class="pill">✅ <span id="solved">0</span></span>
+    <div class="lang"><button id="langEn" class="on">EN</button><button id="langFr">FR</button></div>
+  </div>
+</header>
+
+<main>
+  <section class="board">
+    <div class="toolbar">
+      <select id="level">
+        <option value="1" data-t="lvl1">Level A · 2-digit ÷ 1-digit</option>
+        <option value="2" data-t="lvl2" selected>Level B · 3-digit ÷ 1-digit</option>
+        <option value="3" data-t="lvl3">Level C · 4-digit ÷ 1-digit</option>
+        <option value="4" data-t="lvl4">Level D · 3-digit ÷ 2-digit</option>
+        <option value="5" data-t="lvl5">Level E · 4-digit ÷ 2-digit</option>
+        <option value="6" data-t="lvl6">Level F · Boss: 5-digit ÷ 2-digit</option>
+      </select>
+      <button class="primary" id="newBtn" data-t="new">🎲 New problem</button>
+      <button id="customBtn" data-t="custom">✏️ My own</button>
+      <button id="pencilBtn" data-t="scribble">🖍️ Scribble</button>
+      <button id="clearInkBtn" data-t="wipe">🧽 Wipe scribbles</button>
+      <button class="warn" id="hintBtn" data-t="hint">💡 Hint</button>
+      <button id="soundBtn">🔊</button>
+    </div>
+    <div class="workspace" id="ws">
+      <div id="grid"></div>
+      <canvas id="ink"></canvas>
+      <div class="final" id="final"></div>
+    </div>
+    <p class="small" data-t="keys">Type digits, <kbd>Enter</kbd> to check, <kbd>Backspace</kbd> to fix, <kbd>↓</kbd> to bring a digit down, <kbd>H</kbd> for a hint, <kbd>S</kbd> to toggle scribble mode.</p>
+  </section>
+
+  <aside class="side">
+    <div class="card coach">
+      <div class="mascot" id="mascot">🦉</div>
+      <div class="bubble" id="bubble"></div>
+    </div>
+    <div class="card">
+      <p class="prompt" id="prompt"></p>
+      <div class="typed"><span id="typed"></span><span class="cursor"></span></div>
+      <div class="row">
+        <button class="primary" id="checkBtn" data-t="check">✔ Check</button>
+        <button id="bringBtn" data-t="bring">⬇ Bring down</button>
+        <button id="undoBtn">⌫</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="pens">
+        <span class="small" data-t="pen">Pen:</span>
+        <div class="swatch on" style="background:#1f2937" data-c="#1f2937"></div>
+        <div class="swatch" style="background:#dc2626" data-c="#dc2626"></div>
+        <div class="swatch" style="background:#2563eb" data-c="#2563eb"></div>
+        <div class="swatch" style="background:#16a34a" data-c="#16a34a"></div>
+        <div class="swatch" style="background:#f59e0b" data-c="#f59e0b"></div>
+        <button id="eraserBtn" data-t="eraser">Eraser</button>
+      </div>
+      <p class="small" style="margin:8px 0 0" data-t="scribbleHelp">Scribble mode lets you draw on the paper: circle numbers, jot times tables, whatever helps you think. The lab still checks your typed answers.</p>
+    </div>
+    <div class="card">
+      <div class="small" data-t="badgesTitle">Badges</div>
+      <div class="badges" id="badges"></div>
+    </div>
+  </aside>
+</main>
+<canvas id="confetti"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- translations ----------
+const T = {
+en: {
+  title:"Long Division Lab",
+  lvl1:"Level A · 2-digit ÷ 1-digit", lvl2:"Level B · 3-digit ÷ 1-digit", lvl3:"Level C · 4-digit ÷ 1-digit",
+  lvl4:"Level D · 3-digit ÷ 2-digit", lvl5:"Level E · 4-digit ÷ 2-digit", lvl6:"Level F · Boss: 5-digit ÷ 2-digit",
+  new:"🎲 New problem", custom:"✏️ My own", scribble:"🖍️ Scribble", wipe:"🧽 Wipe scribbles", hint:"💡 Hint", hintAI:"💡 Hint (AI)",
+  keys:"Type digits, <kbd>Enter</kbd> to check, <kbd>Backspace</kbd> to fix, <kbd>↓</kbd> to bring a digit down, <kbd>H</kbd> for a hint, <kbd>S</kbd> to toggle scribble mode.",
+  check:"✔ Check", bring:"⬇ Bring down", pen:"Pen:", eraser:"Eraser",
+  scribbleHelp:"Scribble mode lets you draw on the paper: circle numbers, jot times tables, whatever helps you think. The lab still checks your typed answers.",
+  badgesTitle:"Badges",
+  welcome:"Hi! I'm Professor Hoot. Pick a level and hit <b>New problem</b>.",
+  ready:"Ready when you are!",
+  customPrompt:"Type your problem like  845 ÷ 7   (or 845/7)",
+  cantRead:"I couldn't read that. Try something like <b>845 ÷ 7</b>.",
+  tooBig:"Whoa, that's a lot of digits! Keep it to 7 or fewer.",
+  newOne:(n,d,cur)=>`New one: <b>${n} ÷ ${d}</b>. Let's go! Start with <b>${cur}</b>.`,
+  askQ:(d,cur)=>`How many times does <b>${d}</b> go into <b>${cur}</b>?`,
+  askMul:(q,d)=>`Multiply: <b>${q} × ${d}</b> = ?`,
+  askSub:(cur,p)=>`Subtract: <b>${cur} − ${p}</b> = ?`,
+  askBring:(nx)=>`Bring down the <b>${nx}</b>! (press ⬇)`,
+  done:(n,d,q,r)=>`Done! <b>${n} ÷ ${d} = ${q}</b>${r?` R ${r}`:''}`,
+  R:"R",
+  cheers:["Nailed it! 🎯","Boom! 💥","You're on fire! 🔥","Exactly right! ⭐","Math wizard! 🧙","Yes yes yes! 🙌","Smooth. 😎","That's the stuff! 🍕","Big brain move. 🧠","Ka-ching! 💰"],
+  oops:["Not quite. Try again! 🤔","Close, but no. Have another go. 🙂","Hmm, check that one more time. 🔍","Oops! Let's fix it. 🛠️","Almost! Look again. 👀"],
+  tooMany:(v,d,cur)=>` ${v} × ${d} = ${v*d}, and that's bigger than ${cur}. Too many!`,
+  tooFew:(v,d,cur)=>` ${v} × ${d} = ${v*d}, but ${cur} − ${v*d} = ${cur-v*d}, which still has a ${d} in it. Go bigger!`,
+  negative:" A remainder can't be negative.",
+  nowBring:" Now bring down the next digit.",
+  brought:(nx,cur)=>`Brought down the <b>${nx}</b>. Now you're working with <b>${cur}</b>.`,
+  win:(n,d,q,r,secs)=>`🎉 <b>${n} ÷ ${d} = ${q}${r?' R '+r:''}</b> in ${secs}s.`,
+  flawless:" Flawless run: +25 bonus!", noHints:" No hints: +10!",
+  checkIt:(q,d,r,n)=>` Check it: ${q} × ${d}${r?' + '+r:''} = ${n}. ✔️`,
+  pressN:'Press <kbd>N</kbd> for a new one.',
+  badge:"🏅 Badge: ",
+  badges:{'🥇':'First solve','🖐️':'Five solved','🔟':'Ten solved','💎':'Flawless','🔥':'10 streak','🐉':'2-digit divisor, flawless','👑':'Boss level','🧹':'Clean divide'},
+  thinking:"🤔 Thinking…",
+  hintQ:(d,lo,cur)=>`Think times tables: ${d} × ${lo} = ${d*lo}, ${d} × ${lo+1} = ${d*(lo+1)}. Which one fits into ${cur} without going over?`,
+  hintMul:(q,d,cur)=>`Multiply the number you just wrote on top (${q}) by the divisor (${d}). Write the answer under the ${cur}.`,
+  hintSub:(p,cur,d)=>`Take ${p} away from ${cur}. Line up the ones column! The answer must be smaller than ${d}.`,
+  hintBring:(n)=>`Grab the next digit of ${n} and drop it next to your remainder.`,
+  hintDone:"You did it already! Hit New problem.",
+  scribbleOn:"🖍️ Scribble mode on. Draw anything you like on the paper. Typing still works!",
+  lang:"en",
+},
+fr: {
+  title:"Labo de division longue",
+  lvl1:"Niveau A · 2 chiffres ÷ 1 chiffre", lvl2:"Niveau B · 3 chiffres ÷ 1 chiffre", lvl3:"Niveau C · 4 chiffres ÷ 1 chiffre",
+  lvl4:"Niveau D · 3 chiffres ÷ 2 chiffres", lvl5:"Niveau E · 4 chiffres ÷ 2 chiffres", lvl6:"Niveau F · Boss : 5 chiffres ÷ 2 chiffres",
+  new:"🎲 Nouveau problème", custom:"✏️ Le mien", scribble:"🖍️ Gribouiller", wipe:"🧽 Effacer les gribouillis", hint:"💡 Indice", hintAI:"💡 Indice (IA)",
+  keys:"Tape les chiffres, <kbd>Entrée</kbd> pour vérifier, <kbd>Retour</kbd> pour corriger, <kbd>↓</kbd> pour abaisser un chiffre, <kbd>H</kbd> pour un indice, <kbd>S</kbd> pour gribouiller.",
+  check:"✔ Vérifier", bring:"⬇ Abaisser", pen:"Crayon :", eraser:"Gomme",
+  scribbleHelp:"Le mode gribouillage te laisse dessiner sur la feuille : encercle des nombres, note tes tables, tout ce qui t'aide à réfléchir. Le labo vérifie quand même tes réponses tapées.",
+  badgesTitle:"Badges",
+  welcome:"Salut! Je suis le professeur Hibou. Choisis un niveau et clique sur <b>Nouveau problème</b>.",
+  ready:"Prêt quand tu veux!",
+  customPrompt:"Écris ton problème comme  845 ÷ 7   (ou 845/7)",
+  cantRead:"Je n'ai pas compris. Essaie quelque chose comme <b>845 ÷ 7</b>.",
+  tooBig:"Oh là, ça fait beaucoup de chiffres! Maximum 7.",
+  newOne:(n,d,cur)=>`Nouveau : <b>${n} ÷ ${d}</b>. C'est parti! Commence avec <b>${cur}</b>.`,
+  askQ:(d,cur)=>`Combien de fois <b>${d}</b> va dans <b>${cur}</b>?`,
+  askMul:(q,d)=>`Multiplie : <b>${q} × ${d}</b> = ?`,
+  askSub:(cur,p)=>`Soustrais : <b>${cur} − ${p}</b> = ?`,
+  askBring:(nx)=>`Abaisse le <b>${nx}</b>! (appuie sur ⬇)`,
+  done:(n,d,q,r)=>`Terminé! <b>${n} ÷ ${d} = ${q}</b>${r?` reste ${r}`:''}`,
+  R:"reste",
+  cheers:["Parfait! 🎯","Boum! 💥","Tu es en feu! 🔥","Exactement! ⭐","Magicien des maths! 🧙","Oui oui oui! 🙌","Trop fort. 😎","C'est ça! 🍕","Gros cerveau. 🧠","Bravo! 💰"],
+  oops:["Pas tout à fait. Réessaie! 🤔","Proche, mais non. Encore un essai. 🙂","Hmm, vérifie encore une fois. 🔍","Oups! On corrige. 🛠️","Presque! Regarde encore. 👀"],
+  tooMany:(v,d,cur)=>` ${v} × ${d} = ${v*d}, et c'est plus grand que ${cur}. C'est trop!`,
+  tooFew:(v,d,cur)=>` ${v} × ${d} = ${v*d}, mais ${cur} − ${v*d} = ${cur-v*d}, et il reste encore un ${d} dedans. Prends plus grand!`,
+  negative:" Un reste ne peut pas être négatif.",
+  nowBring:" Maintenant, abaisse le prochain chiffre.",
+  brought:(nx,cur)=>`Tu as abaissé le <b>${nx}</b>. Maintenant tu travailles avec <b>${cur}</b>.`,
+  win:(n,d,q,r,secs)=>`🎉 <b>${n} ÷ ${d} = ${q}${r?' reste '+r:''}</b> en ${secs} s.`,
+  flawless:" Sans faute : +25 bonus!", noHints:" Sans indice : +10!",
+  checkIt:(q,d,r,n)=>` Vérifie : ${q} × ${d}${r?' + '+r:''} = ${n}. ✔️`,
+  pressN:'Appuie sur <kbd>N</kbd> pour un nouveau.',
+  badge:"🏅 Badge : ",
+  badges:{'🥇':'Premier problème','🖐️':'Cinq résolus','🔟':'Dix résolus','💎':'Sans faute','🔥':'Série de 10','🐉':'Diviseur à 2 chiffres, sans faute','👑':'Niveau boss','🧹':'Division exacte'},
+  thinking:"🤔 Je réfléchis…",
+  hintQ:(d,lo,cur)=>`Pense aux tables : ${d} × ${lo} = ${d*lo}, ${d} × ${lo+1} = ${d*(lo+1)}. Lequel entre dans ${cur} sans dépasser?`,
+  hintMul:(q,d,cur)=>`Multiplie le nombre que tu viens d'écrire en haut (${q}) par le diviseur (${d}). Écris la réponse sous le ${cur}.`,
+  hintSub:(p,cur,d)=>`Enlève ${p} de ${cur}. Aligne bien les unités! La réponse doit être plus petite que ${d}.`,
+  hintBring:(n)=>`Prends le prochain chiffre de ${n} et place-le à côté de ton reste.`,
+  hintDone:"C'est déjà fait! Clique sur Nouveau problème.",
+  scribbleOn:"🖍️ Mode gribouillage activé. Dessine ce que tu veux sur la feuille. Tu peux encore taper!",
+  lang:"fr",
+}};
+let L = T.en;
+function setLang(code){
+  L = T[code] || T.en;
+  try{ localStorage.setItem('ldl-lang', code); }catch(e){}
+  document.documentElement.lang = code;
+  document.title = L.title;
+  document.querySelectorAll('[data-t]').forEach(el=>{ el.innerHTML = L[el.dataset.t]; });
+  if(aiStatus.ai) $('#hintBtn').textContent = L.hintAI;
+  $('#langEn').classList.toggle('on',code==='en'); $('#langFr').classList.toggle('on',code==='fr');
+  if(G){ promptFor(); if(G.phase==='done'){ $('#final').textContent = finalText(); } }
+  else { say(L.welcome); $('#prompt').textContent = L.ready; }
+  $('#badges').textContent=[...badges].join(' ');
+}
+
+// ---------- utils ----------
+const $ = s => document.querySelector(s);
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const CELL = 56;
+let soundOn = true;
+let actx;
+function beep(freq, dur=0.12, type='sine', vol=0.15){
+  if(!soundOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq; g.gain.value = vol;
+    o.connect(g); g.connect(actx.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime+dur); o.stop(actx.currentTime+dur);
+  }catch(e){}
+}
+const goodSound = () => { beep(660,.1); setTimeout(()=>beep(880,.15),90); };
+const badSound  = () => beep(180,.25,'square',.08);
+const winSound  = () => [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.2),i*110));
+
+function toast(msg, color){ const t=$('#toast'); t.textContent=msg; t.style.background=color||'var(--good)'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1400); }
+function say(msg, bounce){ $('#bubble').innerHTML = msg; if(bounce){ const m=$('#mascot'); m.classList.remove('bounce'); void m.offsetWidth; m.classList.add('bounce'); } }
+const pick = a => a[rnd(0,a.length-1)];
+
+// ---------- game state ----------
+let G = null;
+let score=0, streak=0, solved=0, badges=new Set();
+const stepsDone = {};
+
+function makeProblem(level){
+  const spec = {1:[10,99,2,9],2:[100,999,2,9],3:[1000,9999,2,9],4:[100,999,11,25],5:[1000,9999,11,49],6:[10000,99999,12,99]}[level];
+  let n,d;
+  do { n = rnd(spec[0],spec[1]); d = rnd(spec[2],spec[3]); } while(n < d*2);
+  return {n,d};
+}
+
+function plan(n,d){
+  const digits = String(n).split('').map(Number);
+  const steps = []; let rem = 0, started=false, quotient='';
+  for(let j=0;j<digits.length;j++){
+    const cur = rem*10 + digits[j];
+    if(!started && cur < d && j < digits.length-1){ rem = cur; continue; }
+    started = true;
+    const q = Math.floor(cur/d), p=q*d, r=cur-p;
+    steps.push({col:j, cur, q, p, r, next: j<digits.length-1 ? digits[j+1] : null});
+    quotient += q; rem = r;
+  }
+  return {digits, steps, quotient:Number(quotient), remainder:rem};
+}
+
+function finalText(){ return `${G.n} ÷ ${G.d} = ${G.quotient}${G.remainder?' '+L.R+' '+G.remainder:''}`; }
+
+function newProblem(custom){
+  const level = Number($('#level').value);
+  let n,d;
+  if(custom){
+    const s = prompt(L.customPrompt);
+    if(!s) return;
+    const m = s.match(/(\d+)\s*[÷\/:]\s*(\d+)/);
+    if(!m || Number(m[2])===0){ say(L.cantRead); return; }
+    n=Number(m[1]); d=Number(m[2]);
+    if(String(n).length>7){ say(L.tooBig); return; }
+  } else ({n,d} = makeProblem(level));
+  const P = plan(n,d);
+  G = {n,d,level, ...P, step:0, phase:'q', typed:'', wrong:0, hintsUsed:0, placed:[], startedAt:Date.now()};
+  clearInk();
+  $('#final').style.display='none';
+  render(); promptFor();
+  say(L.newOne(n,d,G.steps[0].cur), true);
+}
+
+// ---------- layout ----------
+function dw(){ return String(G.d).length; }
+function colX(col){ return (dw()+1+col)*CELL + 10; }
+function rowY(row){ return row*CELL + 10; }
+
+function cell(row,col,text,cls){
+  const el=document.createElement('div'); el.className='c '+(cls||'');
+  el.style.left=colX(col)+'px'; el.style.top=rowY(row)+'px'; el.textContent=text; return el;
+}
+function render(){
+  const grid=$('#grid'); grid.innerHTML='';
+  if(!G) return;
+  const nd = G.digits.length;
+  String(G.d).split('').forEach((ch,i)=>{ grid.appendChild(cell(1,i-dw()-1,ch)); });
+  const v=document.createElement('div'); v.className='vline'; v.style.left=(colX(0)-8)+'px'; v.style.top=(rowY(1)+4)+'px'; v.style.height=(CELL-8)+'px'; grid.appendChild(v);
+  const h=document.createElement('div'); h.className='hline'; h.style.left=(colX(0)-8)+'px'; h.style.top=(rowY(1)-2)+'px'; h.style.width=(nd*CELL+8)+'px'; grid.appendChild(h);
+  G.digits.forEach((dg,i)=>grid.appendChild(cell(1,i,dg)));
+  G.placed.forEach(p=>{
+    if(p.kind==='line'){ const l=document.createElement('div'); l.className='hline'; l.style.left=(colX(p.col0)+6)+'px'; l.style.top=(rowY(p.row)+CELL-4)+'px'; l.style.width=((p.col1-p.col0+1)*CELL-12)+'px'; grid.appendChild(l); }
+    else if(p.kind==='minus'){ const m=document.createElement('div'); m.className='minus'; m.style.left=colX(p.col)+'px'; m.style.top=rowY(p.row)+'px'; m.textContent='−'; grid.appendChild(m); }
+    else grid.appendChild(cell(p.row,p.col,p.text,p.cls));
+  });
+  const a = activeCells();
+  if(a){
+    const t = G.typed.padStart(a.width,' ');
+    for(let i=0;i<a.width;i++){
+      const e=cell(a.row, a.col1-a.width+1+i, t[i]===' '?'':t[i], 'active'); e.id='act'+i; grid.appendChild(e);
+    }
+  }
+  const rows = 2 + G.steps.length*2 + 1;
+  $('#ws').style.minHeight = Math.max(440, rows*CELL+20)+'px';
+  $('#ws').style.minWidth = ((dw()+2+nd)*CELL+20)+'px';
+  sizeInk();
+}
+
+function activeCells(){
+  if(!G || G.phase==='done') return null;
+  const s = G.steps[G.step];
+  if(G.phase==='q')   return {row:0, col1:s.col, width:1};
+  if(G.phase==='mul') return {row:2+2*G.step, col1:s.col, width:Math.max(1,String(s.p).length)};
+  if(G.phase==='sub') return {row:3+2*G.step, col1:s.col, width:Math.max(1,String(s.r).length)};
+  return null;
+}
+
+function promptFor(){
+  const s = G.steps[G.step]; const p=$('#prompt');
+  $('#bringBtn').disabled = G.phase!=='bring';
+  if(G.phase==='q') p.innerHTML = L.askQ(G.d,s.cur);
+  else if(G.phase==='mul') p.innerHTML = L.askMul(s.q,G.d);
+  else if(G.phase==='sub') p.innerHTML = L.askSub(s.cur,s.p);
+  else if(G.phase==='bring') p.innerHTML = L.askBring(s.next);
+  else if(G.phase==='done') p.innerHTML = L.done(G.n,G.d,G.quotient,G.remainder) + ' <br><span class="small">'+L.pressN+'</span>';
+  $('#typed').textContent = G.typed;
+}
+
+// ---------- answering ----------
+function check(){
+  if(!G || G.phase==='done' || G.phase==='bring') return;
+  if(G.typed==='') return;
+  const s=G.steps[G.step]; const v=Number(G.typed);
+  let ok=false;
+  if(G.phase==='q') ok = v===s.q;
+  else if(G.phase==='mul') ok = v===s.p;
+  else if(G.phase==='sub') ok = v===s.r;
+  if(!ok){
+    G.wrong++; streak=0; updateStats(); badSound();
+    document.querySelectorAll('.c.active').forEach(e=>{e.classList.add('shake')});
+    let tip = pick(L.oops);
+    if(G.phase==='q' && v>s.q) tip += L.tooMany(v,G.d,s.cur);
+    else if(G.phase==='q' && v<s.q) tip += L.tooFew(v,G.d,s.cur);
+    else if(G.phase==='sub' && v<0) tip += L.negative;
+    say(tip);
+    setTimeout(()=>{G.typed=''; render(); promptFor();},450);
+    return;
+  }
+  goodSound(); streak++; score += (G.phase==='q'?10:5) * (streak>=5?2:1); updateStats();
+  const cls = {q:'q',mul:'prod',sub:'diff'}[G.phase];
+  const a=activeCells(); const txt=String(v).padStart(a.width,' ');
+  for(let i=0;i<a.width;i++) if(txt[i]!==' ') G.placed.push({row:a.row,col:a.col1-a.width+1+i,text:txt[i],cls});
+  if(G.phase==='q'){
+    G.phase='mul';
+    G.placed.push({kind:'minus',row:2+2*G.step,col:s.col-String(s.p).length});
+  } else if(G.phase==='mul'){
+    G.placed.push({kind:'line',row:2+2*G.step,col0:s.col-String(s.p).length,col1:s.col});
+    G.phase='sub';
+  } else if(G.phase==='sub'){
+    if(s.next===null){ finish(); }
+    else G.phase='bring';
+  }
+  G.typed=''; render(); promptFor();
+  if(G.phase!=='done') say(pick(L.cheers) + (G.phase==='bring' ? L.nowBring : ''), true);
+}
+
+function bringDown(){
+  if(!G || G.phase!=='bring') return;
+  const s=G.steps[G.step];
+  G.placed.push({row:3+2*G.step,col:s.col+1,text:String(s.next),cls:'bd'});
+  beep(440,.08); G.step++; G.phase='q'; G.typed=''; render(); promptFor();
+  say(L.brought(s.next, G.steps[G.step].cur));
+}
+
+function finish(){
+  G.phase='done'; winSound(); solved++; streak++; score += 25 + (G.wrong===0?25:0) + (G.hintsUsed===0?10:0);
+  const f=$('#final'); f.textContent = finalText(); f.style.display='block';
+  confetti();
+  const secs = Math.round((Date.now()-G.startedAt)/1000);
+  let msg = L.win(G.n,G.d,G.quotient,G.remainder,secs);
+  if(G.wrong===0) msg += L.flawless;
+  if(G.hintsUsed===0) msg += L.noHints;
+  msg += L.checkIt(G.quotient,G.d,G.remainder,G.quotient*G.d+G.remainder);
+  say(msg,true);
+  stepsDone[G.level]=(stepsDone[G.level]||0)+1;
+  award(); updateStats();
+}
+
+function award(){
+  const add=(k)=>{ if(!badges.has(k)){ badges.add(k); toast(L.badge+L.badges[k],'var(--accent)'); } };
+  if(solved>=1) add('🥇');
+  if(solved>=5) add('🖐️');
+  if(solved>=10) add('🔟');
+  if(G.wrong===0) add('💎');
+  if(streak>=10) add('🔥');
+  if(G.level>=4 && G.wrong===0) add('🐉');
+  if(G.level===6) add('👑');
+  if(G.remainder===0) add('🧹');
+  $('#badges').textContent=[...badges].join(' ');
+}
+function updateStats(){ $('#score').textContent=score; $('#streak').textContent=streak; $('#solved').textContent=solved; }
+
+// ---------- hints ----------
+const localHint = () => {
+  const s=G.steps[G.step];
+  if(G.phase==='q'){ const lo=Math.max(1,s.q-1); return L.hintQ(G.d,lo,s.cur); }
+  if(G.phase==='mul') return L.hintMul(s.q,G.d,s.cur);
+  if(G.phase==='sub') return L.hintSub(s.p,s.cur,G.d);
+  if(G.phase==='bring') return L.hintBring(G.n);
+  return L.hintDone;
+};
+let aiStatus = {ai:false};
+fetch('/api/status').then(r=>r.json()).then(s=>{ aiStatus=s; if(s.ai) $('#hintBtn').textContent=L.hintAI; }).catch(()=>{});
+async function hint(){
+  if(!G) return;
+  G.hintsUsed++; score=Math.max(0,score-3); updateStats();
+  say(L.thinking);
+  const s=G.steps[G.step];
+  if(aiStatus.ai){
+    try{
+      const r = await fetch('/api/hint',{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({dividend:G.n,divisor:G.d,phase:G.phase,current:s.cur,qdigit:s.q,typed:'',wrongAttempts:G.wrong,lang:L.lang})});
+      const j = await r.json();
+      if(j.hint){ say('💡 '+j.hint,true); return; }
+    }catch(e){}
+  }
+  say('💡 '+localHint(),true);
+}
+
+// ---------- scribble layer ----------
+const ink=$('#ink'), ictx=ink.getContext('2d');
+let drawing=false, penColor='#1f2937', eraser=false, last=null, pencilMode=false;
+function sizeInk(){
+  const ws=$('#ws'); const w=ws.clientWidth, h=ws.clientHeight;
+  if(ink.width!==w||ink.height!==h){ const img=ictx.getImageData(0,0,ink.width||1,ink.height||1); ink.width=w; ink.height=h; ictx.putImageData(img,0,0); }
+}
+function clearInk(){ ictx.clearRect(0,0,ink.width,ink.height); }
+function pos(e){ const r=ink.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; }
+ink.addEventListener('pointerdown',e=>{ if(!pencilMode) return; drawing=true; last=pos(e); ink.setPointerCapture(e.pointerId); e.preventDefault(); });
+ink.addEventListener('pointermove',e=>{
+  if(!drawing) return; const p=pos(e);
+  ictx.lineCap='round'; ictx.lineJoin='round';
+  if(eraser){ ictx.globalCompositeOperation='destination-out'; ictx.lineWidth=28; }
+  else { ictx.globalCompositeOperation='source-over'; ictx.strokeStyle=penColor; ictx.lineWidth = e.pressure ? 2+e.pressure*5 : 4; }
+  ictx.beginPath(); ictx.moveTo(last.x,last.y); ictx.lineTo(p.x,p.y); ictx.stroke(); last=p;
+});
+['pointerup','pointercancel','pointerleave'].forEach(ev=>ink.addEventListener(ev,()=>{drawing=false;}));
+function togglePencil(force){
+  pencilMode = force===undefined ? !pencilMode : force;
+  ink.classList.toggle('drawing',pencilMode); $('#pencilBtn').classList.toggle('on',pencilMode);
+  if(pencilMode) say(L.scribbleOn);
+}
+document.querySelectorAll('.swatch').forEach(s=>s.addEventListener('click',()=>{
+  document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('on')); s.classList.add('on');
+  penColor=s.dataset.c; eraser=false; $('#eraserBtn').classList.remove('on'); togglePencil(true);
+}));
+$('#eraserBtn').addEventListener('click',()=>{ eraser=!eraser; $('#eraserBtn').classList.toggle('on',eraser); togglePencil(true); });
+$('#pencilBtn').addEventListener('click',()=>togglePencil());
+$('#clearInkBtn').addEventListener('click',clearInk);
+window.addEventListener('resize',sizeInk);
+
+// ---------- confetti ----------
+const cc=$('#confetti'), cctx=cc.getContext('2d'); let parts=[];
+function confetti(){
+  cc.width=innerWidth; cc.height=innerHeight;
+  const colors=['#f59e0b','#6d28d9','#16a34a','#dc2626','#2563eb','#ec4899'];
+  for(let i=0;i<160;i++) parts.push({x:innerWidth/2,y:innerHeight/3,vx:(Math.random()-.5)*16,vy:Math.random()*-14-2,c:pick(colors),s:rnd(6,12),r:Math.random()*6.28,life:120});
+  requestAnimationFrame(tick);
+}
+function tick(){
+  cctx.clearRect(0,0,cc.width,cc.height);
+  parts=parts.filter(p=>p.life>0);
+  parts.forEach(p=>{ p.vy+=.4; p.x+=p.vx; p.y+=p.vy; p.r+=.1; p.life--; cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.r); cctx.fillStyle=p.c; cctx.globalAlpha=Math.min(1,p.life/30); cctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6); cctx.restore(); });
+  if(parts.length) requestAnimationFrame(tick); else cctx.clearRect(0,0,cc.width,cc.height);
+}
+
+// ---------- input ----------
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='SELECT') return;
+  if(e.key>='0'&&e.key<='9'){ if(G&&activeCells()){ const a=activeCells(); if(G.typed.length<a.width+1){ G.typed+=e.key; render(); $('#typed').textContent=G.typed; beep(520,.04,'triangle',.05); } } e.preventDefault(); }
+  else if(e.key==='Backspace'){ if(G){ G.typed=G.typed.slice(0,-1); render(); $('#typed').textContent=G.typed; } e.preventDefault(); }
+  else if(e.key==='Enter'){ check(); }
+  else if(e.key==='ArrowDown'||e.key===' '){ bringDown(); e.preventDefault(); }
+  else if(e.key.toLowerCase()==='h'){ hint(); }
+  else if(e.key.toLowerCase()==='n'){ newProblem(); }
+  else if(e.key.toLowerCase()==='s'){ togglePencil(); }
+});
+$('#checkBtn').addEventListener('click',check);
+$('#bringBtn').addEventListener('click',bringDown);
+$('#undoBtn').addEventListener('click',()=>{ if(G){G.typed=G.typed.slice(0,-1); render(); $('#typed').textContent=G.typed;} });
+$('#newBtn').addEventListener('click',()=>newProblem());
+$('#customBtn').addEventListener('click',()=>newProblem(true));
+$('#hintBtn').addEventListener('click',hint);
+$('#soundBtn').addEventListener('click',()=>{ soundOn=!soundOn; $('#soundBtn').textContent=soundOn?'🔊':'🔇'; });
+$('#level').addEventListener('change',()=>newProblem());
+$('#langEn').addEventListener('click',()=>setLang('en'));
+$('#langFr').addEventListener('click',()=>setLang('fr'));
+let startLang = (navigator.language||'').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+try{ startLang = localStorage.getItem('ldl-lang') || startLang; }catch(e){}
+setLang(startLang);
+sizeInk();
+</script>
+</body>
+</html>
